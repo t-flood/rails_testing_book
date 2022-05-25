@@ -1,7 +1,8 @@
-class Project
-  attr_accessor :tasks, :due_date
-  def initialize
-    @tasks = []
+class Project < ApplicationRecord
+  has_many :tasks, dependent: :destroy
+
+  def self.velocity_length_in_days
+    21
   end
 
   def incomplete_tasks
@@ -35,10 +36,6 @@ class Project
   def on_schedule?
     return false if projected_days_remaining.nan?
     (Time.zone.today + projected_days_remaining) <= due_date
-  end
-
-  def self.velocity_length_in_days
-    21
   end
 
   def next_task_order
