@@ -1,28 +1,16 @@
 require "rails_helper"
 
 RSpec.describe Project do
+  it_should_behave_like "sizeable"
 
 
-  describe "completion" do
-    let(:project) { Project.new }
-    let(:task) { Task.new }
-
+  describe "without a task" do
+    let(:project) { FactoryBot.build_stubbed(:project) }
     it "considers a project with no tasks to be done" do
       expect(project).to be_done
     end
 
-    it "knows that a project with an incomplete task is not done" do
-      project.tasks << task
-      expect(project).not_to be_done
-    end
-
-    it "marks a project done if its tasks are done" do
-      project.tasks << task
-      task.mark_completed
-      expect(project).to be_done
-    end
-
-    it "properly handles a blank project" do
+    it "properly estimates a blank project" do
       expect(project.completed_velocity).to eq(0)
       expect(project.current_rate).to eq(0)
       expect(project.projected_days_remaining).to be_nan
@@ -30,25 +18,34 @@ RSpec.describe Project do
     end
   end
 
-  describe "estimates" do
-    #
-    let(:project) { Project.new }
-    let(:newly_done) { Task.new(size: 3, completed_at: 1.day.ago) }
-    let(:old_done) { Task.new(size: 2, completed_at: 6.months.ago) }
-    let(:small_not_done) { Task.new(size: 1) }
-    let(:large_not_done) { Task.new(size: 4) }
+  describe "with a task" do
+    let(:project) { FactoryBot.build_stubbed(:project, tasks: [task]) }
+    let(:task) { FactoryBot.build_stubbed(:task) }
 
-    before(:example) do
-      project.tasks = [newly_done, old_done, small_not_done, large_not_done]
+    it "knows that a project with an incomplete task is not done" do
+      expect(project).not_to be_done
     end
-    #
 
-    it "can calculate total size" do
-      expect(project.total_size).to eq(10)
+    it "marks a project done if it has no incomplete tasks" do
+      task.mark_completed
+      expect(project).to be_done
+    end
+  end
+
+
+
+  describe "estimates" do
+    let(:project) { FactoryBot.build_stubbed(:project, tasks: [newly_done, old_done, small_not_done, large_not_done]) }
+    let(:newly_done) { FactoryBot.build_stubbed(:task, :newly_complete) }
+    let(:old_done) { FactoryBot.build_stubbed(:task, :long_complete, :small) }
+    let(:small_not_done) { FactoryBot.build_stubbed(:task, :small) }
+    let(:large_not_done) { FactoryBot.build_stubbed(:task, :large) }
+
+    it "can calculate total size" do expect(project).to be_of_size(10) expect(project).not_to be_of_size(5)
     end
 
     it "can calculate remaining size" do
-      expect(project.remaining_size).to eq(5)
+      expect(project).to be_of_size(6).for_incomplete_tasks_only
     end
 
     #
@@ -73,7 +70,5 @@ RSpec.describe Project do
       project.due_date = 6.months.from_now
       expect(project).to be_on_schedule
     end
-    #
   end
-
 end
